@@ -1,0 +1,98 @@
+/* Author: Jorge Moreno
+ * Course: Senior Design
+ * Date: 11/29/18
+ * Description: Team HED - Securing IoT - This program if for our 
+ * arduinos client side code. This will communicate with the Pi Hub.
+ * 
+ * Cited Resources: 
+ * https://www.arduino.cc/en/Reference/WiFiClient
+ * https://www.arduino.cc/en/Tutorial/TelnetClient
+ */
+
+
+
+#include <SPI.h>  //These two are for the wifi client
+#include <WiFi.h>
+#include <math.h> //for temp sensor conversion
+
+char ssid[] = "myNetwork";  //Our network ssid name
+char pass[] = "myPassword";  //Our network password
+
+//Following code is for temperature sensor //
+const int B = 4275;               // B value of the thermistor
+const int R0 = 100000;            // R0 = 100k
+const int pinTempSensor = A0;     // Grove - Temperature Sensor connect to A0
+//-------------------------------------------------------------------------//
+
+//Following code is for wifi client //
+int status = WL_IDLE_STATUS;
+IPAddress server(/*put code here for ipaddress*/);
+
+//Initalizing client library
+WiFiClient client;
+//-------------------------------------------------------------------------//
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Attempting to connect to WPA network...");
+  Serial.print("SSID: ");
+  Serial.println(ssid);
+
+  status = WiFi.begin(ssid, pass);
+  if ( status != WL_CONNECTED) {
+    Serial.println("Couldn't connect to wifi!");
+    while(true);
+  }
+  else {
+    Serial.println("Connected to Wifi\n");
+    Serial.println("Connection starting...");\
+    if(client.connect(server,80)) {
+      Serial.println("connected");
+    }
+  }
+
+}
+
+void loop() {
+  //Read temperature data from sensor
+  
+   int a = analogRead(pinTempSensor);
+
+    float R = 1023.0/a-1.0;
+    R = R0*R;
+
+    float temperature = 1.0/(log(R/R0)/B+1/298.15)-273.15; // convert to temperature via datasheet
+
+    Serial.print("temperature = ");
+    Serial.println(temperature);
+
+  //---------------------------------------------------------------------------------------------//
+  
+  //Reading info from server
+  if(client.available()) {
+    char readServer = client.read();
+    Serial.print(readServer);
+  }
+
+  //Reading info from serial monitor (temp. data)
+  //and sending to Pi HUB.
+  while(Serial.available() > 0) {  //if not working change to if statement
+    char sendServer = Serial.read();
+    if(client.connected()) {
+      client.print(sendServer);
+    }
+  }
+
+  //if server disconnects, stop client
+  if(!client.connected()) {
+    Serial.println();
+    Serial.println("Server disconnected: closing client.");
+    client.stop();
+    while(true) {
+      delay(1);
+    }
+  }
+
+  delay(1000);
+
+}
