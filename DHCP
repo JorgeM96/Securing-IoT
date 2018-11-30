@@ -1,0 +1,3 @@
+Steps to activate DHCP Server on Pi
+
+sudo hostapd -dd /etc/hostapd/hostapd.conf
