@@ -1,0 +1,33 @@
+import serial   #Import Serial library
+import socket
+import sys
+import time
+import datetime
+
+arduinoSerialData = serial.Serial('com3', 9600)
+try:
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+except socket.error:
+    print("Failed to connect")
+    sys.exit();
+
+print("Socket created")
+host = "169.254.72.202"  #Host IP for HUB server
+port = 12345     #Port number set by HUB server
+
+try:
+    remote_ip = socket.gethostbyname(host)
+except socket.gaierror:
+    print("Hostname could not be found\n")
+    sys.exit();
+
+print("IP Address: " + remote_ip)
+s.connect((remote_ip, port))
+
+print("Node C connected to " + host + " using IP: " + remote_ip)
+
+while(1==1):
+    if(arduinoSerialData.inWaiting()>0):
+        data = arduinoSerialData.readline()
+        print("Temperature: %s C" , data)
+        s.sendall(b'Node C: ' + data + ' *C')
