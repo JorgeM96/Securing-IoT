@@ -1,0 +1,54 @@
+#  Author: Team HED
+#  Date: 11/29/18
+#  Course: 4910 Senior Design I
+#  Instructor: Dr. Pradhumna Shrestha
+#  Description: This program functions as a client for Node A which reads data
+#  from it's DHT11 temperature sensor and sends it to the server HUB pi.
+#
+#  Cited Resources: 
+
+import socket
+import sys
+import RPi.GPIO as GPIO
+import dht11
+import time
+import datetime
+
+# initialize GPIO
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)
+GPIO.cleanup()
+
+# read data using pin 17
+instance = dht11.DHT11(pin=17)
+
+try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+except socket.error:
+        print("Failed to connect")
+        sys.exit();
+        print("Socket Created")
+host = "169.254.72.202"  #Host IP for HUB server
+port = 12345   #Port number set by HUB server
+try:
+        remote_ip = socket.gethostbyname(host)
+except socket.gaierror:
+        print("Hostname could not be found\n")
+        sys.exit();
+        print("IP Address: " + remote_ip)
+s.connect((remote_ip, port))
+
+print("Node A Connected to " + host + " using IP: " + remote_ip)
+
+while True:
+
+        result = instance.read()
+        if result.is_valid():
+          print("Last valid input: " + str(datetime.datetime.now()))
+          print("Temperature: %.2f C" % result.temperature)
+          s.sendall(b'Node A: '+ str(result.temperature) + ' *C')
+
+        #data = s.recv(1024)
+        #print("Server Sent back: " +data)
+
+          time.sleep(1)
